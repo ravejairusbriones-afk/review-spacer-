@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Countdown Button — Botanical Dusk</title>
+<style>
+  :root{
+    --bg-deep:#0a0c08;
+    --bg-warm:#242b20;
+    --cream:#f2e8d5;
+    --cream-deep:#d8c8a8;
+    --sage:#a9c39a;
+    --terracotta:#cf7a4a;
+    --oxblood:#8e1230;
+    --rose:#d94a63;
+    --ink:#23261c;
+  }
+
+  *{ box-sizing:border-box; }
+
+  html,body{ height:100%; }
+
+  body{
+    margin:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:
+      radial-gradient(circle at 50% 20%, rgba(169,195,154,.10), transparent 55%),
+      radial-gradient(circle at 50% 25%, var(--bg-warm), var(--bg-deep) 72%);
+    font-family:system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color:var(--cream);
+    overflow:hidden;
+    -webkit-tap-highlight-color:transparent;
+  }
+
+  /* ---------- stage / layout ---------- */
+  .stage{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:28px;
+    padding:20px;
+  }
+
+  .hint{
+    margin:0;
+    min-height:1.3em;
+    font-size:.95rem;
+    color:#9b9b88;
+    letter-spacing:.02em;
+    text-align:center;
+    transition:color .3s ease;
+  }
+
+  /* ---------- main button ---------- */
+  .main-btn{
+    width:clamp(160px, 42vw, 210px);
+    aspect-ratio:1 / 1;
+    border:none;
+    border-radius:50%;
+    cursor:pointer;
+    font-family:inherit;
+    font-size:clamp(1.6rem, 5vw, 2.1rem);
+    font-weight:800;
+    letter-spacing:.06em;
+    color:var(--ink);
+    background:linear-gradient(150deg, #f6eeda 0%, #e2d3b4 55%, #cbb992 100%);
+    box-shadow:
+      0 14px 38px rgba(216,200,168,.22),
+      inset 0 -6px 14px rgba(120,100,60,.22),
+      inset 0 4px 10px rgba(255,255,255,.55);
+    transition:transform .15s ease, background .3s ease, box-shadow .3s ease, color .3s ease;
+    user-select:none;
+    outline:none;
+  }
+
+  .main-btn:hover{ transform:scale(1.04); }
+  .main-btn:active{ transform:scale(.96); }
+
+  .main-btn:focus-visible{
+    box-shadow:0 0 0 4px rgba(216,200,168,.30), 0 14px 38px rgba(216,200,168,.22);
+  }
+
+  /* counting state */
+  .main-btn.counting{
+    color:#2a170a;
+    background:linear-gradient(150deg, #f7c39b 0%, #d98a58 55%, #b96a3c 100%);
+    box-shadow:
+      0 14px 38px rgba(207,122,74,.40),
+      inset 0 -6px 14px rgba(90,45,20,.28),
+      inset 0 4px 10px rgba(255,255,255,.35);
+    cursor:default;
+  }
+
+  /* GO state */
+  .main-btn.go{
+    color:#fdf3e3;
+    background:linear-gradient(150deg, #e05a72 0%, #b3223f 55%, #7d0f26 100%);
+    animation:pop .6s cubic-bezier(.2,.9,.3,1.4), glow 1.3s ease-in-out .6s infinite;
+    cursor:pointer;
+  }
+
+  /* per-second pulse while counting */
+  .main-btn.tick{ animation:tick .28s ease; }
+
+  @keyframes tick{
+    0%   { transform:scale(1); }
+    50%  { transform:scale(1.10); }
+    100% { transform:scale(1); }
+  }
+
+  @keyframes pop{
+    0%   { transform:scale(1); }
+    35%  { transform:scale(1.42); }
+    65%  { transform:scale(.90); }
+    82%  { transform:scale(1.06); }
+    100% { transform:scale(1); }
+  }
+
+  @keyframes glow{
+    0%,100%{ box-shadow:0 0 20px rgba(217,74,99,.55), 0 0 60px rgba(217,74,99,.22); }
+    50%    { box-shadow:0 0 46px rgba(217,74,99,.95), 0 0 100px rgba(142,18,48,.55); }
+  }
+
+  /* ---------- settings button ---------- */
+  .settings-btn{
+    position:fixed;
+    top:20px;
+    right:20px;
+    width:52px;
+    height:52px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:1.45rem;
+    line-height:1;
+    color:var(--cream);
+    border-radius:50%;
+    border:1px solid rgba(242,232,213,.14);
+    background:rgba(242,232,213,.07);
+    backdrop-filter:blur(10px);
+    -webkit-backdrop-filter:blur(10px);
+    cursor:pointer;
+    transition:transform .3s ease, background .2s ease;
+  }
+  .settings-btn:hover{
+    background:rgba(242,232,213,.16);
+    transform:rotate(60deg);
+  }
+
+  /* ---------- settings panel ---------- */
+  .settings-panel{
+    position:fixed;
+    top:84px;
+    right:20px;
+    width:min(290px, calc(100vw - 40px));
+    padding:20px;
+    border-radius:16px;
+    border:1px solid rgba(242,232,213,.12);
+    background:rgba(36,43,32,.96);
+    backdrop-filter:blur(14px);
+    -webkit-backdrop-filter:blur(14px);
+    box-shadow:0 26px 60px rgba(0,0,0,.60);
+    transform-origin:top right;
+    transition:opacity .2s ease, transform .2s ease;
+  }
+
+  .settings-panel.hidden{
+    opacity:0;
+    transform:scale(.9) translateY(-6px);
+    pointer-events:none;
+  }
+
+  .settings-panel h2{
+    margin:0 0 16px;
+    font-size:.8rem;
+    font-weight:700;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--cream-deep);
+  }
+
+  .field{
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+
+  .field label{
+    font-size:.9rem;
+    color:#c9c9b6;
+    white-space:nowrap;
+  }
+
+  .field input{
+    flex:1;
+    min-width:0;
+    padding:10px 12px;
+    font-family:inherit;
+    font-size:1rem;
+    color:var(--cream);
+    border-radius:10px;
+    border:1px solid rgba(242,232,213,.16);
+    background:rgba(10,12,8,.80);
+    outline:none;
+    transition:border-color .2s ease, box-shadow .2s ease;
+  }
+
+  .field input:focus{
+    border-color:var(--cream-deep);
+    box-shadow:0 0 0 3px rgba(216,200,168,.18);
+  }
+
+  .field span{
+    font-size:.85rem;
+    color:#9b9b88;
+  }
+
+  .presets{
+    display:flex;
+    flex-wrap:wrap;
+    gap:6px;
+    margin-top:14px;
+  }
+
+  .presets button{
+    padding:6px 11px;
+    font-family:inherit;
+    font-size:.8rem;
+    color:#c9c9b6;
+    border-radius:8px;
+    border:1px solid rgba(242,232,213,.14);
+    background:rgba(242,232,213,.05);
+    cursor:pointer;
+    transition:background .15s ease, border-color .15s ease, color .15s ease;
+  }
+
+  .presets button:hover{
+    color:var(--cream);
+    border-color:var(--cream-deep);
+    background:rgba(216,200,168,.22);
+  }
+
+  .save-btn{
+    width:100%;
+    margin-top:16px;
+    padding:11px;
+    font-family:inherit;
+    font-size:.95rem;
+    font-weight:700;
+    color:var(--ink);
+    border:none;
+    border-radius:10px;
+    background:linear-gradient(150deg, #f2e8d5, #d8c8a8);
+    cursor:pointer;
+    transition:filter .15s ease, transform .1s ease;
+  }
+
+  .save-btn:hover{ filter:brightness(1.08); }
+  .save-btn:active{ transform:scale(.98); }
+</style>
+</head>
+<body>
+
+  <button id="settingsBtn" class="settings-btn" title="Settings" aria-label="Open settings">⚙</button>
+
+  <div class="stage">
+    <button id="mainBtn" class="main-btn" aria-live="polite">START</button>
+    <p id="hint" class="hint">Click the button to start the 7 second countdown</p>
+  </div>
+
+  <div id="settingsPanel" class="settings-panel hidden" role="dialog" aria-label="Countdown settings">
+    <h2>Settings</h2>
+
+    <div class="field">
+      <label for="timeInput">Countdown</label>
+      <input id="timeInput" type="number" min="1" max="3600" step="1" value="7">
+      <span>sec</span>
+    </div>
+
+    <div class="presets">
+      <button type="button" data-sec="3">3s</button>
+      <button type="button" data-sec="5">5s</button>
+      <button type="button" data-sec="7">7s</button>
+      <button type="button" data-sec="10">10s</button>
+      <button type="button" data-sec="15">15s</button>
+      <button type="button" data-sec="30">30s</button>
+    </div>
+
+    <button id="saveBtn" class="save-btn" type="button">Save</button>
+  </div>
+
+<script>
+(function () {
+  'use strict';
+
+  const DEFAULT_TIME = 7;
+  const MIN_TIME     = 1;
+  const MAX_TIME     = 3600;
+  const STORAGE_KEY  = 'countdownSeconds';
+
+  const mainBtn     = document.getElementById('mainBtn');
+  const hint        = document.getElementById('hint');
+  const settingsBtn = document.getElementById('settingsBtn');
+  const panel       = document.getElementById('settingsPanel');
+  const timeInput   = document.getElementById('timeInput');
+  const saveBtn     = document.getElementById('saveBtn');
+  const presetWrap  = panel.querySelector('.presets');
+
+  let countdownTime = DEFAULT_TIME;
+  let state         = 'idle';   // 'idle' | 'counting' | 'go'
+  let timerId       = null;
+
+  /* ---------------- load saved setting ---------------- */
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw !== null) {
+      const n = parseInt(raw, 10);
+      if (!isNaN(n) && n >= MIN_TIME && n <= MAX_TIME) countdownTime = n;
+    }
+  } catch (e) { /* storage not available – ignore */ }
+
+  timeInput.value = countdownTime;
+
+  /* ---------------- helpers ---------------- */
+  function updateHint() {
+    if (state === 'idle') {
+      hint.textContent = 'Click the button to start the ' + countdownTime + ' second countdown';
+      hint.style.color = '#9b9b88';
+    } else if (state === 'counting') {
+      hint.textContent = 'Counting down… click to cancel';
+      hint.style.color = '#e0a37a';
+    } else {
+      hint.textContent = 'Click the button to reset';
+      hint.style.color = '#e58ba0';
+    }
+  }
+
+  function reset() {
+    clearInterval(timerId);
+    timerId = null;
+    state = 'idle';
+    mainBtn.classList.remove('counting', 'go', 'tick');
+    mainBtn.textContent = 'START';
+    updateHint();
+  }
+
+  function pulse() {
+    mainBtn.classList.remove('tick');
+    void mainBtn.offsetWidth;      // force reflow so the animation restarts
+    mainBtn.classList.add('tick');
+  }
+
+  function go() {
+    state = 'go';
+    mainBtn.classList.remove('counting', 'tick');
+    mainBtn.classList.add('go');
+    mainBtn.textContent = 'GO';
+    updateHint();
+  }
+
+  function startCountdown() {
+    clearInterval(timerId);
+    state = 'counting';
+
+    mainBtn.classList.remove('go', 'tick');
+    mainBtn.classList.add('counting');
+    mainBtn.textContent = countdownTime;
+    updateHint();
+
+    // Timestamp based, so background-tab throttling can't drift the timer.
+    const endTime   = performance.now() + countdownTime * 1000;
+    let   lastShown = countdownTime;
+
+    timerId = setInterval(function () {
+      const left = endTime - performance.now();
+
+      if (left <= 0) {
+        clearInterval(timerId);
+        timerId = null;
+        go();
+        return;
+      }
+
+      const secs = Math.ceil(left / 1000);
+      if (secs !== lastShown) {
+        lastShown = secs;
+        mainBtn.textContent = secs;
+        pulse();
+      }
+    }, 50);
+  }
+
+  /* ---------------- main button ---------------- */
+  mainBtn.addEventListener('click', function () {
+    if (state === 'idle') {
+      startCountdown();
+    } else {
+      reset();                 // cancel a countdown, or reset from GO
+    }
+  });
+
+  /* ---------------- settings panel ---------------- */
+  function openPanel() {
+    panel.classList.remove('hidden');
+    timeInput.value = countdownTime;
+    timeInput.focus();
+    timeInput.select();
+  }
+
+  function closePanel() {
+    panel.classList.add('hidden');
+  }
+
+  settingsBtn.addEventListener('click', function (e) {
+    e.stopPropagation();
+    panel.classList.contains('hidden') ? openPanel() : closePanel();
+  });
+
+  // click anywhere outside closes the panel
+  document.addEventListener('click', function (e) {
+    if (panel.classList.contains('hidden')) return;
+    if (panel.contains(e.target) || settingsBtn.contains(e.target)) return;
+    closePanel();
+  });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') closePanel();
+  });
+
+  /* ---------------- applying the new time ---------------- */
+  function applyTime() {
+    let n = parseInt(timeInput.value, 10);
+    if (isNaN(n)) n = DEFAULT_TIME;
+    n = Math.min(MAX_TIME, Math.max(MIN_TIME, n));
+
+    countdownTime = n;
+    timeInput.value = n;
+
+    try { localStorage.setItem(STORAGE_KEY, String(n)); } catch (e) { /* ignore */ }
+
+    closePanel();
+    reset();                       // refresh button + hint text
+  }
+
+  saveBtn.addEventListener('click', applyTime);
+
+  timeInput.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      applyTime();
+    }
+  });
+
+  presetWrap.addEventListener('click', function (e) {
+    const btn = e.target.closest('button[data-sec]');
+    if (!btn) return;
+    timeInput.value = btn.dataset.sec;
+    timeInput.focus();
+  });
+
+  /* ---------------- initial UI ---------------- */
+  reset();
+})();
+</script>
+
+</body>
+</html>
